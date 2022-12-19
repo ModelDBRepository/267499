@@ -1,0 +1,125 @@
+objectvar save_window_, rvp_
+objectvar scene_vector_[9]
+objectvar ocbox_, ocbox_list_, scene_, scene_list_
+{ocbox_list_ = new List()  scene_list_ = new List()}
+
+//Begin PointProcessManager
+{
+load_file("pointman.hoc")
+}
+{
+isoma ocbox_ = new PointProcessManager(0)
+}
+{object_push(ocbox_)}
+{
+mt.select("LinClamp") i = mt.selected()
+ms[i] = new MechanismStandard("LinClamp")
+ms[i].set("del", 60000, 0)
+ms[i].set("tf", 100000, 0)
+ms[i].set("amp0", 0.35, 0)
+ms[i].set("ampf", 0, 0)
+mt.select("LinClamp") i = mt.selected() maction(i)
+hoc_ac_ = 0.5
+sec.sec move() d1.flip_to(0)
+}
+{object_pop() doNotify()}
+{
+ocbox_ = ocbox_.v1
+ocbox_.map("PointProcessManager", 398, 23, 216, 259.2)
+}
+objref ocbox_
+//End PointProcessManager
+
+{
+xpanel("RunControl", 0)
+v_init = -61
+xvalue("Init","v_init", 1,"stdinit()", 1, 1 )
+xbutton("Init & Run","run()")
+xbutton("Stop","stoprun=1")
+runStopAt = 5
+xvalue("Continue til","runStopAt", 1,"{continuerun(runStopAt) stoprun=1}", 1, 1 )
+runStopIn = 20000
+xvalue("Continue for","runStopIn", 1,"{continuerun(t + runStopIn) stoprun=1}", 1, 1 )
+xbutton("Single Step","steprun()")
+t = 300000
+xvalue("t","t", 2 )
+tstop = 300000
+xvalue("Tstop","tstop", 1,"tstop_changed()", 0, 1 )
+dt = 0.025
+xvalue("dt","dt", 1,"setdt()", 0, 1 )
+steps_per_ms = 5
+xvalue("Points plotted/ms","steps_per_ms", 1,"setdt()", 0, 1 )
+screen_update_invl = 2
+xvalue("Scrn update invl","screen_update_invl", 1,"", 0, 1 )
+realtime = 198.44
+xvalue("Real Time","realtime", 0,"", 0, 1 )
+xEnd = 0
+xvalue("Electrode axis X","xEnd", 2 )
+yEnd = 0
+xvalue("Electrode axis Y","yEnd", 2 )
+zEnd = 0
+xvalue("Electrode axis Z","zEnd", 2 )
+sigma = 0.3
+xvalue("Sigma","sigma", 2 )
+xbutton("Quit","quit()")
+xpanel(316,319)
+}
+{
+save_window_ = new Graph(0)
+save_window_.size(0,300000,-0.15,0.15)
+scene_vector_[3] = save_window_
+{save_window_.view(0, -0.15, 300000, 0.3, 624, 0, 695.04, 62.08)}
+graphList[1].append(save_window_)
+save_window_.save_name("graphList[1].")
+save_window_.addexpr("lfp", 1, 1, 0.8, 0.9, 2)
+}
+{
+save_window_ = new Graph(0)
+save_window_.size(0,300000,-76,6)
+scene_vector_[4] = save_window_
+{save_window_.view(0, -76, 300000, 82, 622, 116, 698.88, 61.12)}
+graphList[1].append(save_window_)
+save_window_.save_name("graphList[1].")
+save_window_.addexpr("soma1.v", 1, 1, 0.8, 0.9, 2)
+}
+{
+save_window_ = new Graph(0)
+save_window_.size(0,300000,-100,60)
+scene_vector_[5] = save_window_
+{save_window_.view(0, -100, 300000, 160, 623, 232, 698.88, 63.04)}
+graphList[0].append(save_window_)
+save_window_.save_name("graphList[0].")
+save_window_.addexpr("isoma.v( 0.5 )", 1, 1, 0.8, 0.9, 2)
+}
+{
+save_window_ = new Graph(0)
+save_window_.size(0,300000,3.4,12.3)
+scene_vector_[6] = save_window_
+{save_window_.view(0, 3.4, 300000, 8.9, 623, 350, 699.84, 69.76)}
+graphList[1].append(save_window_)
+save_window_.save_name("graphList[1].")
+save_window_.addexpr("soma1.ko( 0.5 )", 1, 1, 0.8, 0.893039, 2)
+save_window_.addexpr("dend1.ko( 0.5 )", 2, 1, 0.802717, 0.767749, 2)
+}
+{
+save_window_ = new Graph(0)
+save_window_.size(0,300000,9.8,13.9)
+scene_vector_[7] = save_window_
+{save_window_.view(0, 9.8, 300000, 4.1, 622, 476, 702.72, 67.84)}
+graphList[2].append(save_window_)
+save_window_.save_name("graphList[2].")
+save_window_.addexpr("soma1.nai( 0.5 )", 1, 1, 0.8, 0.9, 2)
+save_window_.addexpr("dend1.nai( 0.5 )", 2, 1, 0.8, 0.9, 2)
+}
+{
+save_window_ = new Graph(0)
+save_window_.size(0,300000,6,9)
+scene_vector_[8] = save_window_
+{save_window_.view(0, 6, 300000, 3, 621, 598, 704.64, 70.72)}
+graphList[2].append(save_window_)
+save_window_.save_name("graphList[2].")
+save_window_.addexpr("soma1.cli( 0.5 )", 1, 1, 0.8, 0.9, 2)
+save_window_.addexpr("dend1.cli( 0.5 )", 2, 1, 0.8, 0.9, 2)
+}
+objectvar scene_vector_[1]
+{doNotify()}

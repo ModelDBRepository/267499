@@ -1,0 +1,17 @@
+//Ion concentrations
+print "Interneuron concentrations"
+print "nai = ", isoma.nai, "mM"
+print "ki = ", isoma.ki, "mM"
+print "cai = ", isoma.cai, "mM"
+print "cli = ", isoma.cli, "mM"
+print "hco3i = ", isoma.hco3i, "mM"
+print "ai = ", isoma.ai, "mM"
+print "\n"
+print "nao = ", isoma.nao, "mM"
+print "ko = ", isoma.ko, "mM"
+print "cao = ", isoma.cao, "mM"
+print "clo = ", isoma.clo, "mM"
+print "hco3o = ", isoma.hco3o, "mM"
+print "ao = ", isoma.ao, "mM"
+
+

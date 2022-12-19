@@ -1,0 +1,161 @@
+//**************************   HELP   **************************//
+
+//  POINT of ELECTRODE  //
+
+/* you can set in menu Run Control:
+    ** Electrode axis X    (default: 0)
+    ** Electrode axis Y    (default: 0.5*soma1.L+dend1.L) - top of the model
+    ** Electrode axis Z    (default: 0)
+
+* point (0,0,0) is:
+    ** axis X - in the middle of each soma (0.5*soma.L)   (horizontal)
+    ** axis Y - in the middle of isoma (0.5*isoma.L)      (vertical)
+    ** axis Z - in the middle of each soma (0.5*soma.diam)   (coordinate Z of isoma != 0)
+*/
+
+
+//  DECLARE VARIABLES  //
+
+//basic params
+pyCellsNumber = 4
+inCellsNumber = 1
+posPer = 0.5    //default position of current's source
+
+//soma params
+somaDr = 1.7705
+somaR = 0.5 * soma1.diam
+somaH = soma1.L
+somaX = somaDr + somaR
+somaSurf = 2 * PI * somaR * somaH
+
+//dend params
+dendR = 0.5 * dend1.diam
+dendH = dend1.L
+dendY = 0.5 * somaH + posPer * dendH
+dendSurf = 2 * PI * dendR * dendH
+
+//other params
+synBackY = 0.5 * somaH + 0.8 * dendH
+isomaZ = 2*(somaDr+somaR) * sqrt(3) / 2
+
+sigma = 0.3 //[S/m] Lindén et al., 2014
+
+/****************************************************************/
+
+//  RUN CONTROL  //
+proc addPanelControl() {
+    v_init = -65
+    runStopAt = 5
+    runStopIn = 20000
+    t = 4221.4
+    tstop = 80000
+    dt = 0.025
+    steps_per_ms = 5
+    screen_update_invl = 2
+    realtime = 9.04
+    xEnd = 0
+    yEnd = dend1.L + soma1.L * 0.5
+    zEnd = 0
+    sigma = 0.3 
+
+    xpanel("RunControl", 0)
+    xvalue("Init","v_init", 1,"stdinit()", 1, 1 )
+    xbutton("Init & Run","run()")
+    xbutton("Stop","stoprun=1")
+    xvalue("Continue til","runStopAt", 1,"{continuerun(runStopAt) stoprun=1}", 1, 1 )   
+    xvalue("Continue for","runStopIn", 1,"{continuerun(t + runStopIn) stoprun=1}", 1, 1 )
+    xbutton("Single Step","steprun()")
+    xvalue("t","t", 2 )
+    xvalue("Tstop","tstop", 1,"tstop_changed()", 0, 1 )
+    xvalue("dt","dt", 1,"setdt()", 0, 1 )
+    xvalue("Points plotted/ms","steps_per_ms", 1,"setdt()", 0, 1 )
+    xvalue("Scrn update invl","screen_update_invl", 1,"", 0, 1 )
+    xvalue("Real Time","realtime", 0,"", 0, 1 )
+    xvalue("Electrode axis X","xEnd", 2 )
+    xvalue("Electrode axis Y","yEnd", 2 )
+    xvalue("Electrode axis Z","zEnd", 2 )
+    xvalue("Sigma","sigma", 2 )
+    xbutton("Quit","quit()")
+    xpanel(364,319,0)
+}
+//addPanelControl()
+
+
+//  COUNT LFP  //
+
+func count_distance() {
+    x1 = $1
+    y1 = $2
+    z1 = $3
+    return sqrt( (xEnd-x1)^2 + (yEnd-y1)^2 + (zEnd-z1)^2 )
+}
+
+func count_LFP () {
+    somaDendX = $1
+    somaDendY = $2
+    somaDendZ = $3
+    somaDendSurf = $4
+    somaDendCurrent = $5
+    return somaDendCurrent * somaDendSurf / count_distance(somaDendX, somaDendY, somaDendZ)
+}
+
+func count_isyn_LFP () {
+    synX = $1
+    synY = $2
+    synZ = $3
+       
+    return feed_syn.i / count_distance(synX, synY, synZ)
+}
+
+func count_current () {
+    posTemp=$1
+    forsec $s2 return ina(posTemp) + ik(posTemp) + icl(posTemp) + ica(posTemp)// + i_cap(posTemp)
+}
+
+func count_current_interneuron () {
+    posTemp=$1
+    forsec $s2 return ina(posTemp) + ik(posTemp) + icl(posTemp) + ica(posTemp) - 100*LinClamp[0].i/somaSurf 
+    //factor 100 is added to IClamp point process to remove influence of injected current.
+}
+
+proc countLFP_advanced() {
+    lfpSoma = 0
+    lfpDend = 0
+    lfpSyn = 0
+    indexPos = 2
+
+    //pyramidal cells with dendrites
+    for j = 0, pyCellsNumber-1 {
+        if (j-indexPos==0) {indexPos=1}
+
+        //count_LFP(x, y, z, surf, currents)   //example of parameters  - (x,y,z) is position of soma/dend/syn
+        lfpSoma = lfpSoma + count_LFP((j-indexPos)*somaX, 0, 0, somaSurf, count_current(posPer, s[j].t))
+        lfpDend = lfpDend + count_LFP((j-indexPos)*somaX, dendY, 0, dendSurf, count_current(posPer, d[j].t))
+        //surf=1 because of no surface in synapse LFP formula
+        lfpBackSyn = count_LFP((j-indexPos)*somaX, synBackY, 0, 1, back_syn[j].i)  
+        lfpMutSyn = count_LFP((j-indexPos)*somaX, dendY, 0, 1, mut_syn[j].i)
+        lfpInSyn = count_LFP((j-indexPos)*somaX, 0, 0, 1, in_syn[j].icl)
+        lfpSyn = lfpSyn + lfpBackSyn + lfpMutSyn + lfpInSyn 
+        } 
+
+    //interneuron
+    lfpIsoma = count_LFP(0, 0, isomaZ, somaSurf, count_current_interneuron(posPer, ips[0].t))  
+    lfpFeedSyn = count_isyn_LFP(0, 0, isomaZ) 
+    
+    lfp =  (0.01*lfpSoma + 0.01*lfpDend + lfpSyn + 0.01*0.2*lfpIsoma + 0.2*lfpFeedSyn) / (4*PI*sigma)
+   
+    //factor 0.01 added to all density mechanism currents due to units conversion
+    //factor 0.2 is added to decrease interneuron contribution
+
+}
+
+
+//  MODIFIED MAIN FUNCTION - STEP  //
+
+proc step() { local ii
+    for ii=1, nstep_steprun { advance() }
+    Plot()
+    countLFP_advanced()
+}
+
+/****************************************************************/

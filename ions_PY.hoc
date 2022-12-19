@@ -1,0 +1,17 @@
+//Ion concentrations
+print "Pyramidal soma concentrations"
+print "nai = ", soma1.nai, "mM"
+print "ki = ", soma1.ki, "mM"
+print "cai = ", soma1.cai, "mM"
+print "cli = ", soma1.cli, "mM"
+print "hco3i = ", soma1.hco3i, "mM"
+print "ai = ", soma1.ai, "mM"
+print "\n"
+print "nao = ", soma1.nao, "mM"
+print "ko = ", soma1.ko, "mM"
+print "cao = ", soma1.cao, "mM"
+print "clo = ", soma1.clo, "mM"
+print "hco3o = ", soma1.hco3o, "mM"
+print "ao = ", soma1.ao, "mM"
+
+

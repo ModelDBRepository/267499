@@ -1,0 +1,890 @@
+//GRAPHICAL INTERFACE
+
+load_file("nrngui.hoc")
+
+
+//CELLULAR COMPARTMENTS CREATION
+
+create isoma, soma1, soma2, soma3, soma4
+create dend1, dend2, dend3, dend4
+
+objectvar inter, pyram1, pyram2, pyram3, pyram4
+
+inter = new SectionList()
+isoma inter.append()
+
+pyram1 = new SectionList()
+soma1 pyram1.append()
+dend1 pyram1.append()
+
+pyram2 = new SectionList()
+soma2 pyram2.append()
+dend2 pyram2.append()
+
+pyram3 = new SectionList()
+soma3 pyram3.append()
+dend3 pyram3.append()
+
+pyram4 = new SectionList()
+soma4 pyram4.append()
+dend4 pyram4.append()
+
+
+//SEGMENTS CONNECTION
+
+connect dend1(1), soma1(0)
+connect dend2(1), soma2(0)
+connect dend3(1), soma3(0)
+connect dend4(1), soma4(0)
+
+
+//MEMBRANE MECHANISMS - CONDUCTANCES IN S/cm2
+
+forall {
+     insert nakpump {km_k_nakpump = 2     	//Kager, Wadman, Somjen 2000
+		     km_na_nakpump = 10             //Kager, Wadman, Somjen 2000
+		     //imax_nakpump = 0.01          //Computed from intial conditions to balance Na K currents
+		    }       
+     Ra = 100                               //Fransen et al, 2002
+     cm = 1                                 //Fransen et al, 2002
+
+//IONS
+     insert k_ion
+     insert na_ion
+     insert cl_ion
+     insert ca_ion 
+     insert a_ion
+     insert hco3_ion  
+}
+
+gkleak = 3e-5
+gkleak_inter = 6e-5
+gclleak = 1e-5
+gclleak_inter = 1e-5
+vol_out = 0.15                              //McBain et al, 1990: CA1 EVF = Vout/Vtot = 0.131 ---> 
+                                            //Vout/Vin  = 0.131/(1-0.131) ~ 0.15 
+
+forsec pyram1 {
+     insert leak {gk_leak = gkleak gcl_leak = gclleak}
+     insert cal      
+     insert kahp    
+     insert kc      
+     insert capump
+}
+forsec pyram2 {
+     insert leak {gk_leak = gkleak gcl_leak = gclleak}
+     insert cal     
+     insert kahp    
+     insert kc      
+     insert capump
+}
+forsec pyram3 {
+     insert leak {gk_leak = gkleak gcl_leak = gclleak }
+     insert cal     
+     insert kahp   
+     insert kc     
+     insert capump
+}
+forsec pyram4 {
+     insert leak {gk_leak = gkleak gcl_leak = gclleak }
+     insert cal     
+     insert kahp   
+     insert kc      
+     insert capump
+} 
+isoma {
+     nseg = 1
+     L = 20				     
+     diam = 15			              
+     insert leak {gk_leak = gkleak_inter gcl_leak = gclleak_inter}
+     insert saccum {setvolout_saccum = vol_out}  
+     insert inas  
+     insert ikdrs           
+     insert kcc2  
+}
+
+access soma1  //Default section
+
+soma1 {
+     nseg = 1
+     L = 20				      
+     diam = 15				     
+     insert saccum1 {setvolout_saccum1 = vol_out}
+     insert pnas  
+     insert pkdrs 
+     insert nap 
+     insert km    
+     insert kcc2     
+}
+dend1 {
+     nseg = 1
+     L = 450
+     diam = 6.88
+     insert daccum1 {setvolout_daccum1 = vol_out}
+     insert pnad   
+     insert pkdrd    		   
+     insert kcc2    
+}
+soma2 {
+     nseg = 1
+     L = 20
+     diam = 15
+     insert saccum2 {setvolout_saccum2 = vol_out}
+     insert pnas  
+     insert pkdrs 
+     insert nap  
+     insert km    
+     insert kcc2 
+}
+dend2 {
+     nseg = 1
+     L = 450
+     diam = 6.88
+     insert daccum2 {setvolout_daccum2 = vol_out}
+     insert pnad   
+     insert pkdrd    		   
+     insert kcc2 
+}
+soma3 {
+     nseg = 1
+     L = 20
+     diam = 15
+     insert saccum3 {setvolout_saccum3 = vol_out}
+     insert pnas 
+     insert pkdrs   
+     insert nap  
+     insert km    
+     insert kcc2 
+}
+dend3 {
+     nseg = 1
+     L = 450
+     diam = 6.88
+     insert daccum3 {setvolout_daccum3 = vol_out}
+     insert pnad  	   
+     insert pkdrd 
+     insert kcc2 
+}
+soma4 {
+     nseg = 1
+     L = 20
+     diam = 15
+     insert saccum4 {setvolout_saccum4 = vol_out}
+     insert pnas 
+     insert pkdrs 
+     insert nap 
+     insert km    
+     insert kcc2 
+}
+dend4 {
+     nseg = 1
+     L = 450
+     diam = 6.88
+     insert daccum4 {setvolout_daccum4 = vol_out}
+     insert pnad     
+     insert pkdrd 
+     insert kcc2 
+}
+
+
+//RADIAL DIFFUSION (BETWEEN EXTRACELLULAR SPACES)
+
+proc radial_diffusion() {
+forsec inter {
+   for (x) if (x!=0||x!=1) {
+	setpointer isoma.ko2_saccum(x), soma2.ko(x)
+	setpointer isoma.ko3_saccum(x), soma3.ko(x)
+	setpointer isoma.nao2_saccum(x), soma2.nao(x)
+	setpointer isoma.nao3_saccum(x), soma3.nao(x)
+	 }
+	}
+forsec pyram1 {
+   for (x) if (x!=0||x!=1) {
+	setpointer soma1.ko2_saccum1(x), soma2.ko(x)
+	setpointer dend1.ko2_daccum1(x), dend2.ko(x)
+	setpointer soma1.nao2_saccum1(x), soma2.nao(x)
+	setpointer dend1.nao2_daccum1(x), dend2.nao(x)
+	 }
+	}
+forsec pyram2 {
+   for (x) if (x!=0||x!=1) {
+	setpointer soma2.koint_saccum2(x), isoma.ko(x)
+	setpointer soma2.ko1_saccum2(x), soma1.ko(x)
+	setpointer soma2.ko3_saccum2(x), soma3.ko(x)
+	setpointer dend2.ko1_daccum2(x), dend1.ko(x)
+	setpointer dend2.ko3_daccum2(x), dend3.ko(x)
+	setpointer soma2.naoint_saccum2(x), isoma.nao(x)
+	setpointer soma2.nao1_saccum2(x), soma1.nao(x)
+	setpointer soma2.nao3_saccum2(x), soma3.nao(x)
+	setpointer dend2.nao1_daccum2(x), dend1.nao(x)
+	setpointer dend2.nao3_daccum2(x), dend3.nao(x)
+	 }
+	}
+forsec pyram3 {
+   for (x) if (x!=0||x!=1) {
+	setpointer soma3.koint_saccum3(x), isoma.ko(x)
+	setpointer soma3.ko2_saccum3(x), soma2.ko(x)
+	setpointer soma3.ko4_saccum3(x), soma4.ko(x)
+	setpointer dend3.ko2_daccum3(x), dend2.ko(x)
+	setpointer dend3.ko4_daccum3(x), dend4.ko(x)
+	setpointer soma3.naoint_saccum3(x), isoma.nao(x)
+	setpointer soma3.nao2_saccum3(x), soma2.nao(x)
+	setpointer soma3.nao4_saccum3(x), soma4.nao(x)
+	setpointer dend3.nao2_daccum3(x), dend2.nao(x)
+	setpointer dend3.nao4_daccum3(x), dend4.nao(x)
+	 }
+	}
+forsec pyram4 {
+   for (x) if (x!=0||x!=1) {
+	setpointer soma4.ko3_saccum4(x), soma3.ko(x)
+	setpointer dend4.ko3_daccum4(x), dend3.ko(x)
+	setpointer soma4.nao3_saccum4(x), soma3.nao(x)
+	setpointer dend4.nao3_daccum4(x), dend3.nao(x)
+	 }
+	}
+}
+
+radial_diffusion()
+
+
+//LATERAL DIFFUSION (BETWEEN COMPARTMENTS)
+
+proc lateral_diffusion() {
+forsec pyram1 {
+   for (x) if (x!=0||x!=1) {
+	//Potassium
+	setpointer soma1.kid_saccum1(x), dend1.ki(x)
+	setpointer soma1.kod_saccum1(x), dend1.ko(x)
+	setpointer dend1.kis_daccum1(x), soma1.ki(x)
+	setpointer dend1.kos_daccum1(x), soma1.ko(x)
+	//Sodium
+	setpointer soma1.naid_saccum1(x), dend1.nai(x)
+	setpointer soma1.naod_saccum1(x), dend1.nao(x)
+	setpointer dend1.nais_daccum1(x), soma1.nai(x)
+	setpointer dend1.naos_daccum1(x), soma1.nao(x)
+	//Chloride
+	setpointer soma1.clid_saccum1(x), dend1.cli(x)
+	setpointer soma1.clod_saccum1(x), dend1.clo(x)
+	setpointer dend1.clis_daccum1(x), soma1.cli(x)
+	setpointer dend1.clos_daccum1(x), soma1.clo(x)
+	//Calcium
+	setpointer soma1.caid_saccum1(x), dend1.cai(x)
+	setpointer soma1.caod_saccum1(x), dend1.cao(x)
+	setpointer dend1.cais_daccum1(x), soma1.cai(x)
+	setpointer dend1.caos_daccum1(x), soma1.cao(x)
+	 }
+	}
+forsec pyram2 {
+   for (x) if (x!=0||x!=1) {
+	//Potassium
+	setpointer soma2.kid_saccum2(x), dend2.ki(x)
+	setpointer soma2.kod_saccum2(x), dend2.ko(x)
+	setpointer dend2.kis_daccum2(x), soma2.ki(x)
+	setpointer dend2.kos_daccum2(x), soma2.ko(x)
+	//Sodium
+	setpointer soma2.naid_saccum2(x), dend2.nai(x)
+	setpointer soma2.naod_saccum2(x), dend2.nao(x)
+	setpointer dend2.nais_daccum2(x), soma2.nai(x)
+	setpointer dend2.naos_daccum2(x), soma2.nao(x)
+	//Chloride
+	setpointer soma2.clid_saccum2(x), dend2.cli(x)
+	setpointer soma2.clod_saccum2(x), dend2.clo(x)
+	setpointer dend2.clis_daccum2(x), soma2.cli(x)
+	setpointer dend2.clos_daccum2(x), soma2.clo(x)
+	//Calcium
+	setpointer soma2.caid_saccum2(x), dend2.cai(x)
+	setpointer soma2.caod_saccum2(x), dend2.cao(x)
+	setpointer dend2.cais_daccum2(x), soma2.cai(x)
+	setpointer dend2.caos_daccum2(x), soma2.cao(x)
+	 }
+	}
+forsec pyram3 {
+   for (x) if (x!=0||x!=1) {
+	//Potassium
+	setpointer soma3.kid_saccum3(x), dend3.ki(x)
+	setpointer soma3.kod_saccum3(x), dend3.ko(x)
+	setpointer dend3.kis_daccum3(x), soma3.ki(x)
+	setpointer dend3.kos_daccum3(x), soma3.ko(x)
+	//Sodium
+	setpointer soma3.naid_saccum3(x), dend3.nai(x)
+	setpointer soma3.naod_saccum3(x), dend3.nao(x)
+	setpointer dend3.nais_daccum3(x), soma3.nai(x)
+	setpointer dend3.naos_daccum3(x), soma3.nao(x)
+	//Chloride
+	setpointer soma3.clid_saccum3(x), dend3.cli(x)
+	setpointer soma3.clod_saccum3(x), dend3.clo(x)
+	setpointer dend3.clis_daccum3(x), soma3.cli(x)
+	setpointer dend3.clos_daccum3(x), soma3.clo(x)
+	//Calcium
+	setpointer soma3.caid_saccum3(x), dend3.cai(x)
+	setpointer soma3.caod_saccum3(x), dend3.cao(x)
+	setpointer dend3.cais_daccum3(x), soma3.cai(x)
+	setpointer dend3.caos_daccum3(x), soma3.cao(x)
+	 }
+	}
+forsec pyram4 {
+   for (x) if (x!=0||x!=1) {
+	//Potassium
+	setpointer soma4.kid_saccum4(x), dend4.ki(x)
+	setpointer soma4.kod_saccum4(x), dend4.ko(x)
+	setpointer dend4.kis_daccum4(x), soma4.ki(x)
+	setpointer dend4.kos_daccum4(x), soma4.ko(x)
+	//Sodium
+	setpointer soma4.naid_saccum4(x), dend4.nai(x)
+	setpointer soma4.naod_saccum4(x), dend4.nao(x)
+	setpointer dend4.nais_daccum4(x), soma4.nai(x)
+	setpointer dend4.naos_daccum4(x), soma4.nao(x)
+	//Chloride
+	setpointer soma4.clid_saccum4(x), dend4.cli(x)
+	setpointer soma4.clod_saccum4(x), dend4.clo(x)
+	setpointer dend4.clis_daccum4(x), soma4.cli(x)
+	setpointer dend4.clos_daccum4(x), soma4.clo(x)
+	//Calcium
+	setpointer soma4.caid_saccum4(x), dend4.cai(x)
+	setpointer soma4.caod_saccum4(x), dend4.cao(x)
+	setpointer dend4.cais_daccum4(x), soma4.cai(x)
+	setpointer dend4.caos_daccum4(x), soma4.cao(x)
+	 }
+	}
+}
+
+lateral_diffusion()
+
+
+//NON-SYNAPTIC MECHANISMS CONTROL: 1 = MECHANISM ON, 0 = MECHANISM OFF
+
+//K, Na, Cl diffusion to the bath control
+bdif = 1                  
+//SOMAS
+bath_saccum = bdif
+bath_saccum1 = bdif
+bath_saccum2 = bdif
+bath_saccum3 = bdif
+bath_saccum4 = bdif
+//DENDRITES
+bath_daccum1 = bdif
+bath_daccum2 = bdif
+bath_daccum3 = bdif
+bath_daccum4 = bdif
+
+//Scaling coefficient for diffusion to the bath of Na and Cl
+coef1 = 4.4e4
+//SOMAS
+s_saccum = coef1
+s_saccum1 = coef1
+s_saccum2 = coef1
+s_saccum3 = coef1
+s_saccum4 = coef1
+//DENDRITES
+s_daccum1 = coef1
+s_daccum2 = coef1
+s_daccum3 = coef1
+s_daccum4 = coef1
+
+//Na diffusion to the bath control
+nabath = 1                    
+//SOMAS
+nadif_saccum = nabath
+nadif_saccum1 = nabath
+nadif_saccum2 = nabath
+nadif_saccum3 = nabath
+nadif_saccum4 = nabath
+//DENDRITES
+nadif_daccum1 = nabath
+nadif_daccum2 = nabath
+nadif_daccum3 = nabath
+nadif_daccum4 = nabath
+
+//Scaling coefficient for diffusion to the bath of K
+scal = 4.4e4
+//SOMAS
+sk_saccum = scal
+sk_saccum1 = scal
+sk_saccum2 = scal
+sk_saccum3 = scal
+sk_saccum4 = scal
+//DENDRITES
+sk_daccum1 = scal
+sk_daccum2 = scal
+sk_daccum3 = scal
+sk_daccum4 = scal
+
+//Radial diffusion control
+radif = 1
+//SOMAS
+rad_saccum = radif
+rad_saccum1 = radif
+rad_saccum2 = radif
+rad_saccum3 = radif
+rad_saccum4 = radif
+//DENDRITES
+rad_daccum1 = radif
+rad_daccum2 = radif
+rad_daccum3 = radif
+rad_daccum4 = radif
+
+//Sodium radial diffusion control
+naradif = 1
+//SOMAS
+narad_saccum = naradif
+narad_saccum1 = naradif
+narad_saccum2 = naradif
+narad_saccum3 = naradif
+narad_saccum4 = naradif
+//DENDRITES
+narad_daccum1 = naradif
+narad_daccum2 = naradif
+narad_daccum3 = naradif
+narad_daccum4 = naradif
+
+//Potassium buffering control
+buffer = 1
+//SOMAS
+bf_saccum = buffer
+bf_saccum1 = buffer
+bf_saccum2 = buffer
+bf_saccum3 = buffer
+bf_saccum4 = buffer
+//DENDRITES
+bf_daccum1 = buffer
+bf_daccum2 = buffer
+bf_daccum3 = buffer
+bf_daccum4 = buffer
+
+//Forward rate constant sigmoid threshold for potassium buffer - it is 15 mM in Kager et al., 2000 
+coef2 = 16
+//SOMAS
+x0_saccum = coef2
+x0_saccum1 = coef2
+x0_saccum2 = coef2
+x0_saccum3 = coef2
+x0_saccum4 = coef2
+//DENDRITES
+x0_daccum1 = coef2
+x0_daccum2 = coef2
+x0_daccum3 = coef2
+x0_daccum4 = coef2
+
+//Total potassium buffer capacity - it is 500 mM in Kager et al., 2000      
+coef3 = 1100
+//SOMAS
+TotalBuffer_saccum = coef3 
+TotalBuffer_saccum1 = coef3
+TotalBuffer_saccum2 = coef3
+TotalBuffer_saccum3 = coef3
+TotalBuffer_saccum4 = coef3
+//DENDRITES
+TotalBuffer_daccum1 = coef3
+TotalBuffer_daccum2 = coef3
+TotalBuffer_daccum3 = coef3
+TotalBuffer_daccum4 = coef3
+
+//Forward rate constant sigmoid steepness for potassium buffer - it is -1.09 mM in Kager et al., 2000 
+coef4 = -1.25
+//SOMAS
+q_saccum = coef4
+q_saccum1 = coef4
+q_saccum2 = coef4
+q_saccum3 = coef4
+q_saccum4 = coef4
+//DENDRITES
+q_daccum1 = coef4
+q_daccum2 = coef4
+q_daccum3 = coef4
+q_daccum4 = coef4
+
+//Volume changes control
+voldyn = 1
+//SOMAS
+swell_saccum = voldyn
+swell_saccum1 = voldyn
+swell_saccum2 = voldyn
+swell_saccum3 = voldyn
+swell_saccum4 = voldyn
+//DENDRITES
+swell_daccum1 = voldyn
+swell_daccum2 = voldyn
+swell_daccum3 = voldyn
+swell_daccum4 = voldyn
+
+//Volume changes time constant
+coef4 = 250
+//SOMAS
+tau_saccum = coef4
+tau_saccum1 = coef4
+tau_saccum2 = coef4
+tau_saccum3 = coef4
+tau_saccum4 = coef4
+//DENDRITES
+tau_daccum1 = coef4
+tau_daccum2 = coef4
+tau_daccum3 = coef4
+tau_daccum4 = coef4
+
+
+//TEMPERATURE
+celsius = 32  //Gnatkovsky et al., 2008
+
+
+//SIMULATION CONTROL 
+Tstart = 0
+Tstop = 180000
+
+
+//SYNAPTIC CONNECTIONS
+
+
+//PYRAMIDAL CELLS
+
+//Inhibitory synapses (GABA_A)
+
+begintemplate psomas
+   public t
+   strdef t
+endtemplate psomas
+
+objref s[4]
+for i = 0, 3 {
+	s[i] = new psomas()
+}
+
+s[0].t = "soma1"
+s[1].t = "soma2"
+s[2].t = "soma3"
+s[3].t = "soma4"
+
+objref ips[1]
+for i = 0, 0 {
+	ips[i] = new psomas()
+}
+
+ips[0].t = "isoma"
+
+objref in_syn[4]
+
+for i = 0, 3 {
+	forsec s[i].t in_syn[i] = new is_GABA(0.5)
+}
+
+w_inh = 0.0005 //Inhibitory synapse weight 
+
+objref I_connection[4]
+for i = 0, 3 {
+	isoma I_connection[i] = new NetCon(&v(1),in_syn[i],-20,0,w_inh)  
+}
+
+//Excitatory synapses (AMPA)
+
+//Background activity
+
+begintemplate pdends
+   public t
+   strdef t
+endtemplate pdends
+
+objref d[4]
+for i = 0, 3 {
+	d[i] = new pdends()
+}
+
+d[0].t = "dend1"
+d[1].t = "dend2"
+d[2].t = "dend3"
+d[3].t = "dend4"
+
+objref back_source[4]  //Background activity source
+
+for i = 0, 3 {
+	noise_interval = 200
+	back_source[i] = new NetStim()
+	back_source[i].number = 10000    	      
+	back_source[i].interval = noise_interval        
+	back_source[i].noise = 1  //Takes values in the [0,1] range, where 0 ---> deterministic and 1 ---> fully random
+	back_source[i].start = 0  //Time at which the first spike is fired
+} 
+
+objref back_syn[4]
+
+for i = 0, 3 {
+	forsec d[i].t back_syn[i] = new Exp2Syn(0.8)
+	back_syn[i].e = 0
+	back_syn[i].tau2 = 6
+	back_syn[i].tau1 = 2
+}
+
+w_back = 0.0004  //Synaptic weight for background input
+
+objref I_connection1[4]
+for i = 0, 3 {
+	I_connection1[i] = new NetCon(back_source[i],back_syn[i],0,0, w_back)
+}
+
+//Mutual interaction between PY cells
+
+NumberCells = 4
+
+objref mut_syn[NumberCells]
+
+for j = 0, 3 {
+	forsec d[j].t mut_syn[j] = new Exp2Syn(0.5)  
+	mut_syn[j].e = 0
+	mut_syn[j].tau2 = 6
+	mut_syn[j].tau1 = 2	
+	}
+
+NumberCon = 0	   
+MaxNumberCon = NumberCells*NumberCells  //Maximal number of allowed connections
+objref I_connection2[MaxNumberCon]
+
+w_mut = 0.0002   //Synaptic weight for mutual interaction between PY cells
+
+for i = 0, 3 {
+	for j = 0, 3 {
+		if(i != j) {
+			forsec s[j].t I_connection2[NumberCon] = new NetCon(&v(1),mut_syn[i],-20,0,w_mut)
+			NumberCon = NumberCon + 1			
+		}
+	}
+}
+
+//Compensation of the absence of background input by a steady depolarizing DC current
+
+objref compensate_dend[4]
+for i = 0, 3 {
+    forsec d[i].t compensate_dend[i] = new IClamp(0.5)
+	compensate_dend[i].del = 0
+	compensate_dend[i].dur = 300000
+	compensate_dend[i].amp = 0
+
+}
+
+//External periodic stimulation to detect postictal period of reduced excitability
+
+objref stim_source
+
+	stim_source = new NetStim()
+	stim_source.number = 1000   	      
+	stim_source.interval = 5000        
+	stim_source.noise = 0	 
+	stim_source.start = 5000
+
+objref stim_syn_soma[4]
+
+for i = 0, 3 {
+    forsec s[i].t stim_syn_soma[i] = new Exp2Syn(0.5)
+	stim_syn_soma[i].e = 0
+	stim_syn_soma[i].tau2 = 6
+	stim_syn_soma[i].tau1 = 2
+}
+
+//w_stim_soma = 0.0009 
+w_stim_soma = 0.000
+
+objref I_connection_stim_soma[4]
+for i = 0, 3 {
+	I_connection_stim_soma[i] = new NetCon(stim_source,stim_syn_soma[i],0,0, w_stim_soma)
+}
+
+
+//INTERNEURON
+
+//Excitatory feedback from PY cells to IN
+
+objref feed_syn
+
+isoma feed_syn = new Exp2Syn(0.5)
+	feed_syn.e = 0
+	feed_syn.tau2 = 6
+	feed_syn.tau1 = 2
+
+w_feed = 0.0017  //Synaptic weight for PY cells feedback to IN
+
+objref I_connection3[4]
+for i = 0, 3 {
+	forsec s[i].t I_connection3[i] = new NetCon(&v(1),feed_syn,-20, 0, w_feed)
+}
+
+
+//INITIAL ION CONCENTRATIONS
+forall {
+     ko0_k_ion = 3.5        //Somjen et al., 2008
+     nao0_na_ion = 140      //Somjen et al., 2008
+     cao0_ca_ion = 2        //1.5 mM in Somjen et al., 2008, 2.5-5 mM in Johnston and Wu (1995) 
+     clo0_cl_ion = 135      //Payne 2003
+     hco3o0_hco3_ion = 25   //Doyon et al., 2011
+     hco3o = hco3o0_hco3_ion  //Not a state hence not intialized in mod files
+     ao0_a_ion = 0          //Somjen et al., 2008 
+     nai0_na_ion = 10       //Somjen et al., 2008
+     cai0_ca_ion = 5e-5     //Somjen et al., 2008
+     cli0_cl_ion = 6        //Doyon et al., 2011
+     hco3i0_hco3_ion = 15   //Doyon et al., 2011
+     hco3i = hco3i0_hco3_ion  //Not a state hence not intialized in mod files
+     ki0_k_ion =  87          //Payne 2003
+     ai0_a_ion = (ko0_k_ion + nao0_na_ion + cao0_ca_ion + clo0_cl_ion + hco3o0_hco3_ion - ki0_k_ion - nai0_na_ion - cai0_ca_ion - cli0_cl_ion - hco3i0_hco3_ion)  //Calculated from osmotic equilibrium
+    
+//Chloride bath concentration    
+//SOMAS
+clb_saccum = clo0_cl_ion
+clb_saccum1 = clo0_cl_ion
+clb_saccum2 = clo0_cl_ion
+clb_saccum3 = clo0_cl_ion
+clb_saccum4 = clo0_cl_ion
+//DENDRITES
+clb_daccum1 = clo0_cl_ion
+clb_daccum2 = clo0_cl_ion
+clb_daccum3 = clo0_cl_ion
+clb_daccum4 = clo0_cl_ion
+}
+
+v_init= -61
+
+
+//INITIALIZATION PROCEDURE
+
+proc set_soma() {
+	access soma1
+	init()  //init with all initial concentrations
+	print "\n"
+    print "soma"
+    ena = nernst("ena")
+    ek = nernst("ek")
+    ecl = nernst("ecl")
+    print "ena=",ena," ek=",ek," ecl=",ecl
+    Iclleak = gclleak*(v_init - ecl)
+    u = -Iclleak/(log((ki*cli)/(ko*clo)))
+    Icl_kcc2 = u*(log((ki*cli)/(ko*clo)))
+    Ik_kcc2 = -u*(log((ki*cli)/(ko*clo)))
+    dr_na=v_init-ena
+    dr_k=v_init-ek
+    //gnaleak computed from intial conditions to fulfill INa = -(3/2)IK at rest
+    gnaleak_soma = (-(3/2)*(dr_k*gkleak+soma1.ik_pkdrs(0.5)+Ik_kcc2+soma1.ik_km(0.5)+soma1.ik_kc(0.5))-soma1.ina_nap(0.5)-soma1.ina_pnas(0.5))/dr_na
+    //NaK pump rate computed to balance Na K currents at rest	
+    p_k=1/((1+km_k_nakpump/ko)*(1+km_k_nakpump/ko))
+    p_na=1/((1+km_na_nakpump/nai)*(1+km_na_nakpump/nai)*(1+km_na_nakpump/nai))
+    p_tot=p_k*p_na
+    totalpump_nakpump_soma = (-gnaleak_soma*dr_na-soma1.ina_nap(0.5)-soma1.ina_pnas(0.5))/(3*p_tot)
+
+for i = 0, 3 {
+forsec s[i].t {
+ 	gna_leak = gnaleak_soma 
+ 	imax_nakpump = totalpump_nakpump_soma
+ 	}
+}
+print "kcc2 amplitude =",u
+print "gk_soma=",gk_leak, "gcl_soma=",gcl_leak, "and gna_soma=", gna_leak
+print "imax_nakpump_soma=",totalpump_nakpump_soma
+
+init()  //With new conductances
+finitialize()
+fcurrent()
+}
+set_soma()
+
+proc set_dend() {
+	access dend1
+	init()  //init with all initial concentrations
+	print "\n"
+	print "dendrite"
+	ena = nernst("ena")
+    ek = nernst("ek")
+    ecl = nernst("ecl")
+    print "ena=",ena," ek=",ek," ecl=",ecl    
+	Iclleak = gclleak*(v_init - ecl)
+    u = -Iclleak/(log((ki*cli)/(ko*clo)))
+    Icl_kcc2 = u*(log((ki*cli)/(ko*clo)))
+    Ik_kcc2 = -u*(log((ki*cli)/(ko*clo)))
+    dr_na=v_init-ena
+	dr_k=v_init-ek
+	//gnaleak computed from intial conditions to fulfill INa = -(3/2)IK at rest
+	gnaleak_dend = (-(3/2)*(dr_k*gkleak+dend1.ik_pkdrd(0.5)+Ik_kcc2)-dend1.ina_pnad(0.5))/dr_na
+	//NaK pump rate computed to balance Na K currents at rest			
+	p_k=1/((1+km_k_nakpump/ko)*(1+km_k_nakpump/ko))
+    p_na=1/((1+km_na_nakpump/nai)*(1+km_na_nakpump/nai)*(1+km_na_nakpump/nai))
+    p_tot=p_k*p_na
+    totalpump_nakpump_dend = (-gnaleak_dend*dr_na-dend1.ina_pnad(0.5))/(3*p_tot)
+
+for i = 0, 3 {
+forsec d[i].t {
+ 	gk_leak = gkleak
+ 	gna_leak = gnaleak_dend
+ 	gcl_leak = gclleak
+	U_kcc2 = -u 
+ 	imax_nakpump = totalpump_nakpump_dend
+ 	}
+}
+
+print "kcc2 amplitude =",u
+print "gk=",gk_leak, "gcl=",gcl_leak, "and gna=", gna_leak
+print "imax_nakpump=",totalpump_nakpump_dend
+
+init()  //With new conductances
+finitialize()
+fcurrent()
+}
+set_dend()
+
+proc set_interneuron() {
+	v_init = -61
+	access isoma
+	init()  //init with all initial concentrations
+	print "\n"
+    print "interneuron"
+    ena = nernst("ena")
+    ek = nernst("ek")
+    ecl = nernst("ecl")
+    print "ena=",ena," ek=",ek," ecl=",ecl    
+	Iclleak = gclleak_inter*(v_init - ecl)
+    u = -Iclleak/(log((ki*cli)/(ko*clo)))
+    Icl_kcc2 = u*(log((ki*cli)/(ko*clo)))
+    Ik_kcc2 = -u*(log((ki*cli)/(ko*clo)))
+    dr_na=v_init-ena
+	dr_k=v_init-ek
+	//gnaleak computed from intial conditions to fulfill INa = -(3/2)IK at rest
+	gnaleak_inter = (-(3/2)*(dr_k*gkleak_inter+Ik_kcc2+isoma.ik_ikdrs(0.5))-isoma.ina_inas(0.5))/dr_na	
+	//NaK pump rate computed to balance Na K currents at rest	
+	p_k=1/((1+km_k_nakpump/ko)*(1+km_k_nakpump/ko))
+    p_na=1/((1+km_na_nakpump/nai)*(1+km_na_nakpump/nai)*(1+km_na_nakpump/nai))
+    p_tot=p_k*p_na
+    totalpump_nakpump_inter = (-gnaleak_inter*dr_na-isoma.ina_inas(0.5))/(3*p_tot)
+	
+forsec inter {
+	gk_leak = gkleak_inter
+	gna_leak = gnaleak_inter 
+	gcl_leak = gclleak_inter
+	U_kcc2 = -u 
+	imax_nakpump = totalpump_nakpump_inter
+}
+
+print "kcc2 amplitude =",u
+print "gk_leak_inter=",gk_leak, "gcl_soma_inter=",gcl_leak, "and gna_soma_inter=", gna_leak
+print "imax_nakpump_inter=",totalpump_nakpump_inter
+
+init()  //With new conductances
+finitialize()
+fcurrent()
+} 
+set_interneuron()
+
+
+//Initial ion concentrations check
+
+proc ion() {
+	print "\n"
+	xopen("ions_PY.hoc")
+	print "\n"
+	xopen("ions_dend.hoc")
+	print "\n"
+	xopen("ions_IN.hoc")
+	
+}
+ion()
+
+load_file("new_lfp.hoc")
+
+xopen("Figure2.ses") 
+
+//INITIAL BULK CONCENTRATIONS GRADIENT (DELTA) 
+
+print "\n"
+print "delta IN = ", isoma.nai + isoma.ki + isoma.cli + isoma.cai + isoma.ai + isoma.hco3i - isoma.nao - isoma.ko - isoma.clo - isoma.cao - isoma.ao - isoma.hco3o, "mM"
+print "delta PY = ", soma1.nai + soma1.ki + soma1.cli + soma1.cai + soma1.ai + soma1.hco3i - soma1.nao - soma1.ko - soma1.clo - soma1.cao - soma1.ao - soma1.hco3o, "mM"
